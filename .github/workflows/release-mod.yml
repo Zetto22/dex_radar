@@ -1,25 +1,32 @@
 # Pack one mod folder as a root-level zip and publish a GitHub Release.
 #
-# Tag format:  <mod_id>-v<semver>   e.g.  dex_radar-v0.1.1
-# Manual run:  Actions → Release mod → choose mod_id + version
+# Tag format (required by gen1recomp ModUpdate):  v<semver>
+#   e.g.  v1.0.0
+# The engine strips a leading "v" and requires the rest to start with X.Y.Z.
+# Prefixed tags like dex_radar-v1.0.0 are IGNORED by in-game "Check for updates".
 #
-# Zip layout (required by gen1recomp Import / Update):
-#   manifest.json, main.lua, ... at the archive root (not nested in mod_id/).
+# Zip asset:  <mod_id>-<version>.zip  (e.g. dex_radar-1.0.0.zip)
+# Zip layout: files at archive root (manifest.json, main.lua, …).
+#
+# Manual run: Actions → Release mod → mod_id + version
+# Tag push:   git tag v1.0.0 && git push origin v1.0.0
+#             (defaults mod_id to dex_radar; override via workflow_dispatch)
 
 name: Release mod
 
 on:
   push:
     tags:
-      - "*-v*"
+      - "v*"
   workflow_dispatch:
     inputs:
       mod_id:
         description: "Mod folder / manifest id (e.g. dex_radar)"
         required: true
         type: string
+        default: "dex_radar"
       version:
-        description: "Semver without leading v (e.g. 0.1.1). Empty = read manifest.json"
+        description: "Semver without leading v (e.g. 1.0.0). Empty = read manifest.json"
         required: false
         type: string
         default: ""
@@ -39,17 +46,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          DEFAULT_MOD_ID="dex_radar"
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             MOD_ID="${{ inputs.mod_id }}"
             VERSION="${{ inputs.version }}"
           else
             TAG="${GITHUB_REF_NAME}"
-            MOD_ID="${TAG%-v*}"
-            VERSION="${TAG##*-v}"
-            if [ "$MOD_ID" = "$TAG" ] || [ -z "$VERSION" ]; then
-              echo "Tag must look like <mod_id>-v<semver> (got: $TAG)"
+            # Engine-compatible: v1.2.3
+            if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+              VERSION="${TAG#v}"
+              MOD_ID="$DEFAULT_MOD_ID"
+            else
+              echo "Tag must look like v<semver> (got: $TAG)"
+              echo "gen1recomp ModUpdate only accepts semver tags (v1.0.0), not mod-prefixed tags."
               exit 1
             fi
+          fi
+
+          if [ -z "${MOD_ID}" ]; then
+            MOD_ID="$DEFAULT_MOD_ID"
           fi
 
           if [ ! -d "$MOD_ID" ]; then
@@ -72,13 +88,21 @@ jobs:
           fi
 
           ASSET="${MOD_ID}-${VERSION}.zip"
+          TITLE=$(python3 tools/github_release_notes.py "$MOD_ID" "$VERSION" --title-only)
+          python3 tools/github_release_notes.py "$MOD_ID" "$VERSION" > release_notes.md
           {
             echo "mod_id=$MOD_ID"
             echo "version=$VERSION"
             echo "asset=$ASSET"
-            echo "tag=${MOD_ID}-v${VERSION}"
+            echo "tag=v${VERSION}"
+            echo "title<<EOF"
+            echo "$TITLE"
+            echo "EOF"
           } >> "$GITHUB_OUTPUT"
-          echo "Packing $MOD_ID @ $VERSION -> $ASSET"
+          echo "Packing $MOD_ID @ $VERSION -> $ASSET (release tag v$VERSION)"
+          echo "Title: $TITLE"
+          echo "----- notes -----"
+          cat release_notes.md
 
       - name: Build installable zip (files at archive root)
         shell: bash
@@ -86,7 +110,6 @@ jobs:
           set -euo pipefail
           MOD_ID="${{ steps.meta.outputs.mod_id }}"
           ASSET="${{ steps.meta.outputs.asset }}"
-          # Exclude local tooling / junk if present later
           (
             cd "$MOD_ID"
             zip -r "../$ASSET" . \
@@ -103,7 +126,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
-          name: ${{ steps.meta.outputs.mod_id }} ${{ steps.meta.outputs.version }}
+          name: ${{ steps.meta.outputs.title }}
+          body_path: release_notes.md
           files: ${{ steps.meta.outputs.asset }}
-          generate_release_notes: true
+          generate_release_notes: false
           fail_on_unmatched_files: true
+          make_latest: true

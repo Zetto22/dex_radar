@@ -18,6 +18,10 @@ API docs: [gen1recomp wiki](https://github.com/bryanthaboi/gen1recomp/wiki)
 
 Or download the per-mod `.zip` from [Releases](https://github.com/Zetto22/gen1recomp_mods/releases) and use **Import mod .zip** in the launcher.
 
+In-game **Check for updates** needs a GitHub release tagged **`vX.Y.Z`**
+(e.g. `v1.0.0`) with asset `<mod_id>-X.Y.Z.zip`. That matches
+[gen1recomp `ModUpdate`](https://github.com/bryanthaboi/gen1recomp/blob/dev/src/mods/ModUpdate.lua).
+
 ## Pack a mod zip locally
 
 ```bash

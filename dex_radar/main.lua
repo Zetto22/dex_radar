@@ -3,11 +3,14 @@
 
 local SCREEN = "DexRadar"
 
-local LIST_TOP = 28
-local LIST_BOTTOM = 128
 local ROW_H = 28
 local HEADER_H = 12
+local VISIBLE_MONS = 3
+local LIST_TOP = 28
+-- Viewport fits one section header + VISIBLE_MONS rows (no partial clip).
+local LIST_BOTTOM = LIST_TOP + HEADER_H + VISIBLE_MONS * ROW_H
 local ICON = 16
+local MAP_LABEL_MAX = 15
 -- Hold-to-scroll (same cadence as engine ListMenu).
 local REPEAT_DELAY = 16
 local REPEAT_RATE = 4
@@ -153,10 +156,17 @@ end
 
 local function mapLabel(mod, mapId)
   local map = mod.content.maps:get(mapId)
+  local label
   if type(map) == "table" then
-    return map.label or map.id or mapId
+    label = map.label or map.id or mapId
+  else
+    label = mapId
   end
-  return mapId
+  label = tostring(label or "UNKNOWN")
+  if #label > MAP_LABEL_MAX then
+    return label:sub(1, MAP_LABEL_MAX) .. "..."
+  end
+  return label
 end
 
 local function isSeen(game, speciesId)
@@ -371,7 +381,13 @@ local function ensureVisible(self)
   local h = rowHeight(self.rows[rowIdx])
   local view = LIST_BOTTOM - LIST_TOP
   if y < self.scroll then
-    self.scroll = y
+    -- If the row fits with the list at the top, snap to 0 so section
+    -- headers stay visible and the "more above" arrow clears.
+    if y + h <= view then
+      self.scroll = 0
+    else
+      self.scroll = y
+    end
   elseif y + h > self.scroll + view then
     self.scroll = y + h - view
   end
@@ -528,7 +544,8 @@ local function screenFactory(mod)
         local y = LIST_TOP - self.scroll
         for i, row in ipairs(self.rows) do
           local h = rowHeight(row)
-          if y + h > LIST_TOP and y < LIST_BOTTOM then
+          -- Fully visible rows only — avoids a 1px sliver above "B: BACK".
+          if y >= LIST_TOP and y + h <= LIST_BOTTOM then
             if row.kind == "header" then
               love.graphics.setColor(0, 0, 0, 1)
               Font.draw(row.text, 8, y + 2)
@@ -563,11 +580,11 @@ local function screenFactory(mod)
                 drawPokeball(afterName + 6, y + 4, 4)
               end
 
-              if self.showLevels then
+              if self.showLevels and row.seen then
                 love.graphics.setColor(0, 0, 0, 1)
                 Font.draw(levelText(row), nameX, y + 9)
               end
-              if self.showRates and row.rate ~= nil then
+              if self.showRates and row.seen and row.rate ~= nil then
                 love.graphics.setColor(0, 0, 0, 1)
                 Font.draw(("RATE%d"):format(row.rate), nameX, y + 18)
               end
@@ -580,8 +597,18 @@ local function screenFactory(mod)
         love.graphics.setColor(0, 0, 0, 1)
         Font.draw("B: BACK", 8, 128)
         local maxScroll = math.max(0, totalHeight(self.rows) - (LIST_BOTTOM - LIST_TOP))
-        if self.scroll < maxScroll and Theme and Theme.moreArrow and Font.drawCode then
-          Font.drawCode(Theme.moreArrow, 144, 120)
+        if Theme and Theme.moreArrow and Font.drawCode then
+          -- $EE is the Gen 1 "more below" glyph; flip it for "more above".
+          if self.scroll > 0 then
+            love.graphics.push()
+            love.graphics.translate(144, LIST_TOP)
+            love.graphics.scale(1, -1)
+            Font.drawCode(Theme.moreArrow, 0, -8)
+            love.graphics.pop()
+          end
+          if self.scroll < maxScroll then
+            Font.drawCode(Theme.moreArrow, 144, LIST_BOTTOM - 8)
+          end
         end
       end
 
