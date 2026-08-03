@@ -5,6 +5,75 @@ All notable changes to **Dex Radar** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project versions with the `version` field in `manifest.json`.
 
+## [0.2.4] — 2026-08-03
+
+### Changed
+
+- Header counter is just `N/M` (right-aligned); dropped the `OWNED` label.
+
+## [0.2.3] — 2026-08-03
+
+### Fixed
+
+- Up/Down list navigation and scroll (cursor wrap, keep selection on-screen).
+- Selection cursor uses the Gen 1 arrow glyph (`Theme.cursor`) instead of
+  ASCII `>`, which did not draw in the game font.
+- Hold Up/Down to repeat, matching engine list menus.
+- “More below” arrow when the list continues past the viewport.
+
+## [0.2.2] — 2026-08-03
+
+### Changed
+
+- Full species names again (no 8-character truncate).
+- Owned Poké Ball sits beside the name again.
+
+## [0.2.1] — 2026-08-03
+
+### Changed
+
+- Removed the large front-sprite preview; list-only layout.
+- Encounter rate shows per species under the level / Poké Ball line
+  (e.g. `RATE20`), not on the section header.
+
+## [0.2.0] — 2026-08-03
+
+### Added
+
+- Title counter `N/M OWNED` for unique species on the current map.
+- Option **SHOW LEVELS** — min–max level from encounter slots on the same
+  line as the owned Poké Ball mark.
+- Option **SHOW RATES** — grass/water encounter rate on the section header
+  (e.g. `GRASS RATE30`).
+- Compact list with 16×16 party icons and a large front-sprite preview for
+  the highlighted species (↑/↓ to move the cursor).
+
+### Planned (next)
+
+- Richer `mod.exports` (`isOwnedOnMap`, route species list helpers).
+- Safari-specific polish if gaps appear beyond normal encounter tables.
+
+## [0.1.4] — 2026-08-03
+
+### Changed
+
+- Names longer than 8 characters truncate with `...` (e.g. `JIGGLYPU...`).
+- Owned Poké Ball mark sits on the line below the name.
+
+## [0.1.3] — 2026-08-03
+
+### Changed
+
+- List sprites draw at native 1:1 size (56px rows) instead of shrinking to a
+  tiny slot; sprite column skips SGB shade remap so detail is preserved.
+
+## [0.1.2] — 2026-08-03
+
+### Changed
+
+- Sharper list sprites: nearest-neighbor filter, integer downscale only, larger
+  row, and a neutral gray SGB palette (fixes mushy / green-tinted art).
+
 ## [0.1.1] — 2026-08-03
 
 ### Added
