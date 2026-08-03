@@ -10,7 +10,16 @@ local LIST_TOP = 28
 -- Viewport fits one section header + VISIBLE_MONS rows (no partial clip).
 local LIST_BOTTOM = LIST_TOP + HEADER_H + VISIBLE_MONS * ROW_H
 local ICON = 16
-local MAP_LABEL_MAX = 15
+-- Map label window: the header starts at x=8 and the box's 8px padding
+-- convention clips at the inner right edge 152, so 144px = 18 glyphs.
+-- Labels wider than that scroll instead of truncating.
+local MAP_LABEL_X = 8
+local MAP_LABEL_W = 152 - MAP_LABEL_X
+-- Ticker pacing (the QoL Toggles label ticker's): hold at each end so the
+-- player can read the whole label, scroll at 16px/s (half a second per
+-- glyph).
+local TICKER_HOLD = 1.6
+local TICKER_SPEED = 16
 -- Hold-to-scroll (same cadence as engine ListMenu).
 local REPEAT_DELAY = 16
 local REPEAT_RATE = 4
@@ -154,6 +163,32 @@ local function collect(mod, mapId)
   return sections
 end
 
+-- Horizontal offset for an overflowing label at time t (seconds): hold at 0,
+-- scroll out to -overflow, hold, scroll back to 0.  Content that fits
+-- (overflow <= 0) is static.  Pure, so the headless suite can assert the
+-- overflow path without drawing.
+local function tickerOffset(t, overflow)
+  if not (overflow and overflow > 0) then return 0 end
+  local scroll = overflow / TICKER_SPEED
+  local cycle = 2 * TICKER_HOLD + 2 * scroll
+  local p = (t or 0) % cycle
+  if p < TICKER_HOLD then return 0 end
+  p = p - TICKER_HOLD
+  if p < scroll then return -p * TICKER_SPEED end
+  p = p - scroll
+  if p < TICKER_HOLD then return -overflow end
+  p = p - TICKER_HOLD
+  return -overflow + p * TICKER_SPEED
+end
+
+-- The ticker record for a label drawn with Font at the header, or nil when
+-- it fits its window.
+local function mapLabelTicker(Font, label)
+  local w = Font.width and Font.width(label)
+  if not w or w <= MAP_LABEL_W then return nil end
+  return { x = MAP_LABEL_X, w = MAP_LABEL_W, overflow = w - MAP_LABEL_W }
+end
+
 local function mapLabel(mod, mapId)
   local map = mod.content.maps:get(mapId)
   local label
@@ -162,11 +197,7 @@ local function mapLabel(mod, mapId)
   else
     label = mapId
   end
-  label = tostring(label or "UNKNOWN")
-  if #label > MAP_LABEL_MAX then
-    return label:sub(1, MAP_LABEL_MAX) .. "..."
-  end
-  return label
+  return tostring(label or "UNKNOWN")
 end
 
 local function isSeen(game, speciesId)
@@ -417,6 +448,7 @@ local function screenFactory(mod)
       local mapId = currentMapId(mod)
       local rows, monIndex, ownedN, totalN = buildRows(mod, game, mapId)
       local label = mapId and mapLabel(mod, mapId) or "UNKNOWN"
+      local mapTicker = mapLabelTicker(Font, label)
 
       local icons, quads = {}, {}
       local function iconImg(path)
@@ -442,6 +474,8 @@ local function screenFactory(mod)
         cursor = 1,
         scroll = 0,
         mapLabel = label,
+        mapTicker = mapTicker,
+        mapTick = 0,
         ownedN = ownedN,
         totalN = totalN,
         showLevels = showLevels,
@@ -480,7 +514,11 @@ local function screenFactory(mod)
         end
       end
 
-      function self:update(_dt)
+      function self:update(dt)
+        -- advance the map label ticker (the draw pass reads mapTick)
+        if self.mapTicker then
+          self.mapTick = (self.mapTick or 0) + (dt or 0)
+        end
         local input = self.game.input
         if input:wasPressed("b") then
           self.game.stack:pop()
@@ -531,7 +569,14 @@ local function screenFactory(mod)
         Font.draw("DEX RADAR", 8, 6)
         local ow = (Font.width and Font.width(ownedLabel)) or (#ownedLabel * 8)
         Font.draw(ownedLabel, math.max(8, 160 - 8 - ow), 6)
-        Font.draw(self.mapLabel, 8, 14)
+        if self.mapTicker then
+          love.graphics.setScissor(self.mapTicker.x, 14, self.mapTicker.w, 8)
+          Font.draw(self.mapLabel, self.mapTicker.x
+              + tickerOffset(self.mapTick or 0, self.mapTicker.overflow), 14)
+          love.graphics.setScissor()
+        else
+          Font.draw(self.mapLabel, 8, 14)
+        end
 
         if #self.monIndex == 0 then
           Font.draw("NO WILD", 8, 56)
