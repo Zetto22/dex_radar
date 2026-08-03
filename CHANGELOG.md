@@ -5,6 +5,15 @@ All notable changes to **Dex Radar** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project versions with the `version` field in `manifest.json`.
 
+## [1.1.0] — 2026-08-04
+
+### Changed
+
+- Long map labels scroll across the header (scrolling ticker, pacing from the
+  QoL Toggles mod) instead of truncating to 15 characters plus `...`. The
+  full map name is now always readable; the ticker holds at each end and
+  scrolls at 16px/s. Shorter labels draw exactly as before.
+
 ## [1.0.0] — 2026-08-03
 
 <!-- release-title: First stable release -->
