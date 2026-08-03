@@ -2,8 +2,9 @@
 
 Lists wild Pokémon available on the **current map** (grass, water, fishing).
 
-Compact party-icon list. Unseen entries show as `?????` with silhouetted
-icons. Owned species get a Poké Ball mark. Opening the radar does **not**
+Compact party-icon list (up to 3 species on screen, plus section headers).
+Unseen entries show as `?????` with silhouetted icons (no level/rate).
+Owned species get a Poké Ball mark. Opening the radar does **not**
 mark seen/owned.
 
 ## Install
@@ -30,8 +31,8 @@ mark seen/owned.
 
 | Option | Default | Meaning |
 |--------|---------|---------|
-| SHOW LEVELS | on | Min–max level under the name |
-| SHOW RATES | on | `RATE##` under each species (habitat rate) |
+| SHOW LEVELS | on | Min–max level under the name (seen only) |
+| SHOW RATES | on | `RATE##` under each species (seen only; habitat rate) |
 | HOTKEY | on | Enable keyboard shortcut |
 | HOTKEY KEY | R | Letter key (or OFF) |
 
@@ -61,4 +62,6 @@ Calling these helpers does **not** mark Pokédex seen/owned.
 ## Notes
 
 - Content mod (`affects_link: false`); disable to restore vanilla menus exactly.
+- GitHub releases for in-game Update must use tag **`vX.Y.Z`** (e.g. `v1.0.0`)
+  with asset **`dex_radar-X.Y.Z.zip`**. Prefixed tags are ignored by the launcher.
 - License: [MIT](LICENSE) · Changes: [CHANGELOG.md](CHANGELOG.md)

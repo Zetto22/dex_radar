@@ -5,6 +5,59 @@ All notable changes to **Dex Radar** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project versions with the `version` field in `manifest.json`.
 
+## [1.0.0] — 2026-08-03
+
+<!-- release-title: First stable release -->
+
+First stable release. Player UI and `mod.exports` are semver-stable from here.
+
+### Added
+
+- More-above / more-below scroll arrows on long lists.
+
+### Changed
+
+- Unseen species (`?????`) hide level and encounter rate.
+- Map label keeps 15 characters of the name, then `...`.
+- List viewport shows one section header + up to 3 Pokémon; only fully
+  visible rows are drawn (no clip sliver above `B: BACK`).
+
+### Fixed
+
+- More-above arrow clears when the selection returns to the top of the list.
+
+### Notes
+
+- Safari Zone and Super Rod–only maps use the shared encounter / `superRod`
+  tables. Report gaps for a **1.0.x** patch if something looks wrong in-game.
+
+## [0.3.4] — 2026-08-03
+
+### Added
+
+- “More above” arrow (flipped Gen 1 more-below glyph) when the list can
+  scroll up, matching the existing more-below marker.
+
+## [0.3.3] — 2026-08-03
+
+### Changed
+
+- Map label keeps 15 characters of the name, then `...`
+  (e.g. `MtMoonPokecenter` → `MtMoonPokecente...`).
+
+## [0.3.2] — 2026-08-03
+
+### Changed
+
+- Hide encounter rate for unseen species (same rule as levels).
+
+## [0.3.1] — 2026-08-03
+
+### Changed
+
+- Hide level range for unseen species (`?????`).
+- Map label truncates long names with `...` (length rule refined in 0.3.3).
+
 ## [0.3.0] — 2026-08-03
 
 ### Added
@@ -60,10 +113,10 @@ and this project versions with the `version` field in `manifest.json`.
 - Compact list with 16×16 party icons and a large front-sprite preview for
   the highlighted species (↑/↓ to move the cursor).
 
-### Planned (next)
+### Notes
 
-See `plans/dex-radar/ROADMAP.md` (1.0.0 path). Historical note: richer exports
-shipped in **0.3.0**; Safari / Super Rod–only left to player reports after 1.0.0.
+- Public API and Safari / Super Rod follow-ups: see later **1.0.0** notes.
+  (Historical “Planned” block from 0.2.0.)
 
 ## [0.1.4] — 2026-08-03
 
