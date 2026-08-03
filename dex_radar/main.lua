@@ -142,6 +142,27 @@ local function isSeen(game, speciesId)
   return dex and dex.seen and dex.seen[speciesId] and true or false
 end
 
+local function isOwned(game, speciesId)
+  local dex = game and game.save and game.save.pokedex
+  return dex and dex.owned and dex.owned[speciesId] and true or false
+end
+
+-- Tiny pokeball drawn with primitives (pure B/W for GB / SGB palettes).
+local function drawPokeball(cx, cy, r)
+  r = r or 4
+  love.graphics.setColor(1, 1, 1, 1)
+  love.graphics.circle("fill", cx, cy, r)
+  love.graphics.setColor(0, 0, 0, 1)
+  love.graphics.arc("fill", "pie", cx, cy, r, math.pi, math.pi * 2)
+  love.graphics.setLineWidth(1)
+  love.graphics.circle("line", cx, cy, r)
+  love.graphics.line(cx - r, cy, cx + r, cy)
+  love.graphics.setColor(1, 1, 1, 1)
+  love.graphics.circle("fill", cx, cy, 1.6)
+  love.graphics.setColor(0, 0, 0, 1)
+  love.graphics.circle("line", cx, cy, 1.6)
+end
+
 -- ------- screen
 
 local function buildRows(mod, game, mapId)
@@ -152,11 +173,13 @@ local function buildRows(mod, game, mapId)
     for _, speciesId in ipairs(section.species) do
       local def = mod.content.pokemon:get(speciesId)
       local seen = isSeen(game, speciesId)
+      local owned = isOwned(game, speciesId)
       local name = (def and def.name) or speciesId
       rows[#rows + 1] = {
         kind = "mon",
         id = speciesId,
         seen = seen,
+        owned = owned,
         name = seen and name or "?????",
         path = def and def.spriteFront,
       }
@@ -279,7 +302,12 @@ local function screenFactory(mod)
                 love.graphics.rectangle("line", 8, y + 4, SPRITE_MAX, SPRITE_MAX)
               end
               love.graphics.setColor(0, 0, 0, 1)
-              Font.draw(row.name, 40, y + 8)
+              local nameX, nameY = 40, y + 8
+              Font.draw(row.name, nameX, nameY)
+              if row.owned and row.seen then
+                local textW = (Font.width and Font.width(row.name)) or (#row.name * 8)
+                drawPokeball(nameX + textW + 6, nameY + 3, 4)
+              end
             end
           end
           y = y + h

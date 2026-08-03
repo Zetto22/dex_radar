@@ -1,0 +1,109 @@
+# Pack one mod folder as a root-level zip and publish a GitHub Release.
+#
+# Tag format:  <mod_id>-v<semver>   e.g.  dex_radar-v0.1.1
+# Manual run:  Actions → Release mod → choose mod_id + version
+#
+# Zip layout (required by gen1recomp Import / Update):
+#   manifest.json, main.lua, ... at the archive root (not nested in mod_id/).
+
+name: Release mod
+
+on:
+  push:
+    tags:
+      - "*-v*"
+  workflow_dispatch:
+    inputs:
+      mod_id:
+        description: "Mod folder / manifest id (e.g. dex_radar)"
+        required: true
+        type: string
+      version:
+        description: "Semver without leading v (e.g. 0.1.1). Empty = read manifest.json"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve mod id and version
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MOD_ID="${{ inputs.mod_id }}"
+            VERSION="${{ inputs.version }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+            MOD_ID="${TAG%-v*}"
+            VERSION="${TAG##*-v}"
+            if [ "$MOD_ID" = "$TAG" ] || [ -z "$VERSION" ]; then
+              echo "Tag must look like <mod_id>-v<semver> (got: $TAG)"
+              exit 1
+            fi
+          fi
+
+          if [ ! -d "$MOD_ID" ]; then
+            echo "Missing mod folder: $MOD_ID"
+            exit 1
+          fi
+          if [ ! -f "$MOD_ID/manifest.json" ]; then
+            echo "Missing $MOD_ID/manifest.json"
+            exit 1
+          fi
+
+          if [ -z "${VERSION}" ]; then
+            VERSION=$(python3 -c "import json; print(json.load(open('$MOD_ID/manifest.json'))['version'])")
+          fi
+
+          MANIFEST_VERSION=$(python3 -c "import json; print(json.load(open('$MOD_ID/manifest.json'))['version'])")
+          if [ "$VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "Tag/input version ($VERSION) != manifest version ($MANIFEST_VERSION)"
+            exit 1
+          fi
+
+          ASSET="${MOD_ID}-${VERSION}.zip"
+          {
+            echo "mod_id=$MOD_ID"
+            echo "version=$VERSION"
+            echo "asset=$ASSET"
+            echo "tag=${MOD_ID}-v${VERSION}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Packing $MOD_ID @ $VERSION -> $ASSET"
+
+      - name: Build installable zip (files at archive root)
+        shell: bash
+        run: |
+          set -euo pipefail
+          MOD_ID="${{ steps.meta.outputs.mod_id }}"
+          ASSET="${{ steps.meta.outputs.asset }}"
+          # Exclude local tooling / junk if present later
+          (
+            cd "$MOD_ID"
+            zip -r "../$ASSET" . \
+              -x "*.zip" \
+              -x "*.modpkg" \
+              -x "tests/*" \
+              -x ".modkitignore" \
+              -x ".luarc.json" \
+              -x ".git/*"
+          )
+          unzip -l "$ASSET" | head -40
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.mod_id }} ${{ steps.meta.outputs.version }}
+          files: ${{ steps.meta.outputs.asset }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
