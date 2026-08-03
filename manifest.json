@@ -1,13 +1,14 @@
 {
   "id": "dex_radar",
   "name": "Dex Radar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "entry": "main.lua",
   "api": 2,
   "profile": "content",
   "affects_link": false,
   "category": "TOOL",
   "priority": 100,
-  "description": "Lists wild Pokemon available on the current map (grass, water, fishing). Unseen species are silhouetted.",
-  "game_version": ">=0.0.0-0 <2.0.0"
+  "description": "Lists wild Pokemon available on the current map (grass, water, fishing). Unseen species are silhouetted. Owned species show a Pokeball mark.",
+  "game_version": ">=0.0.0-0 <2.0.0",
+  "github": "Zetto22/gen1recomp_mods"
 }

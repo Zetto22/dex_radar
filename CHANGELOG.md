@@ -5,6 +5,13 @@ All notable changes to **Dex Radar** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project versions with the `version` field in `manifest.json`.
 
+## [0.1.1] — 2026-08-03
+
+### Added
+
+- Mini Poké Ball icon beside species already owned (`pokedex.owned`), pure black and white.
+- Manifest `github` field for launcher Update / Releases (`Zetto22/gen1recomp_mods`).
+
 ## [0.1.0] — 2026-08-03
 
 ### Added

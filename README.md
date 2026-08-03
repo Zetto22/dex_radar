@@ -2,8 +2,9 @@
 
 Lists wild Pokémon available on the **current map** (grass, water, fishing).
 
-Unseen Pokédex entries show as `?????` with a black silhouette. Opening the
-radar does **not** mark species as seen.
+Unseen Pokédex entries show as `?????` with a black silhouette. Owned species
+get a small Poké Ball icon beside the name. Opening the radar does **not**
+mark species as seen or owned.
 
 ## Install
 
