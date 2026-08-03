@@ -9,22 +9,25 @@ and this project versions with the `version` field in `manifest.json`.
 
 <!-- release-title: First stable release -->
 
-First stable release. Player UI and `mod.exports` are semver-stable from here.
+First stable release. Full feature set below; `mod.exports` and player UI are
+semver-stable from here.
 
 ### Added
 
-- More-above / more-below scroll arrows on long lists.
-
-### Changed
-
-- Unseen species (`?????`) hide level and encounter rate.
-- Map label keeps 15 characters of the name, then `...`.
-- List viewport shows one section header + up to 3 Pokémon; only fully
-  visible rows are drawn (no clip sliver above `B: BACK`).
-
-### Fixed
-
-- More-above arrow clears when the selection returns to the top of the list.
+- Start menu row **DEX RADAR** (before SAVE) and overworld hotkey (default `R`,
+  configurable / disableable in options).
+- Wild species list for the current map: **GRASS**, **WATER**, and **FISH**
+  (Old → Good → Super Rod; FISH also on Super Rod–only maps).
+- Compact party-icon rows with owned Poké Ball mark and title counter `N/M`.
+- Unseen species show as `?????` with silhouetted icons; levels and rates stay
+  hidden until seen (opening the radar does not mark the Pokédex).
+- Options **SHOW LEVELS**, **SHOW RATES**, **HOTKEY**, and **HOTKEY KEY**.
+- Scrollable list (one section header + up to 3 Pokémon on screen), Gen 1
+  cursor, and more-above / more-below arrows.
+- Long map labels truncate to 15 characters plus `...`.
+- Indoor / no-encounter maps show **NO WILD POKEMON**.
+- Public `mod.exports` for other mods: `collect`, `speciesOnMap`, `ownedCount`,
+  `isOwnedOnMap`, `isSeen`, `isOwned`.
 
 ### Notes
 
