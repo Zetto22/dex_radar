@@ -18,25 +18,20 @@ API docs: [gen1recomp wiki](https://github.com/bryanthaboi/gen1recomp/wiki)
 
 Or download the per-mod `.zip` from [Releases](https://github.com/Zetto22/gen1recomp_mods/releases) and use **Import mod .zip** in the launcher.
 
-## Publishing a release
-
-One GitHub Release **per mod**, with a zip whose files sit at the **archive root** (so `manifest.json` is not nested under an extra folder).
-
-1. Bump `version` in that mod's `manifest.json` (and `CHANGELOG.md`)
-2. Commit and push to `main`
-3. Tag and push:
+## Pack a mod zip locally
 
 ```bash
-git tag dex_radar-v0.1.1
-git push origin dex_radar-v0.1.1
+./pack dex_radar
 ```
 
-Or run **Actions → Release mod** and enter `mod_id` + `version`.
+On Windows CMD / PowerShell:
 
-Tag format: `<mod_id>-v<semver>` (example: `dex_radar-v0.1.1`). The version must match `manifest.json`.
+```bat
+pack dex_radar
+```
 
-Each mod that supports launcher Update/Versions should set `"github": "Zetto22/gen1recomp_mods"` in its manifest.
+Creates `dex_radar-<version>.zip` with files at the archive root. Zips are gitignored.
 
-## Legal
-
-Mods must **not** include ROM-derived content. The player supplies their own Pokémon Red (US) ROM on first boot.
+```bash
+./pack dex_radar --out dist/
+```

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Usage: ./pack dex_radar
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT="$ROOT/pack.py"
+
+if command -v python >/dev/null 2>&1; then
+  exec python "$SCRIPT" "$@"
+fi
+if command -v python3 >/dev/null 2>&1; then
+  exec python3 "$SCRIPT" "$@"
+fi
+
+echo "Python not found on PATH." >&2
+exit 1

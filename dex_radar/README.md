@@ -2,40 +2,38 @@
 
 Lists wild Pokémon available on the **current map** (grass, water, fishing).
 
-Unseen Pokédex entries show as `?????` with a black silhouette. Owned species
-get a small Poké Ball icon beside the name. Opening the radar does **not**
-mark species as seen or owned.
+Compact party-icon list. Unseen entries show as `?????` with silhouetted
+icons. Owned species get a Poké Ball mark. Opening the radar does **not**
+mark seen/owned.
 
 ## Install
 
-1. Copy this folder into the game's `mods/` directory
+1. Copy this folder into the game's `mods/` directory  
+   (or import the release zip)
 2. Enable it in Options → Mod Manager
 3. Restart (or `POKEPORT_DEV=1` + F5 while developing)
 
 ## How to open
 
 1. **START → DEX RADAR**
-2. **Hotkey** (default `R`) while on the overworld — change or disable under
-   this mod's options (`HOTKEY` / `HOTKEY KEY`)
+2. **Hotkey** (default `R`) on the overworld
 
-## What it shows
+## Controls
 
-| Section | Source |
-|---------|--------|
-| GRASS | `encounters[map].grass.slots` (common → rare) |
-| WATER | `encounters[map].water.slots` |
-| FISH | Old + Good rods (global) + Super Rod for this map, if the map has water slots and/or a Super Rod group |
-
-Maps with no wild data show `NO WILD POKEMON`.
+| Input | Action |
+|-------|--------|
+| ↑ / ↓ | Move selection |
+| ← / → | Jump selection |
+| B | Close |
 
 ## Options
 
 | Option | Default | Meaning |
 |--------|---------|---------|
+| SHOW LEVELS | on | Min–max level next to the owned ball |
+| SHOW RATES | on | `RATE##` under each species (habitat rate) |
 | HOTKEY | on | Enable keyboard shortcut |
 | HOTKEY KEY | R | Letter key (or OFF) |
-
-Hotkey only fires when the overworld is the top screen (not in menus/battles).
 
 ## Notes
 
