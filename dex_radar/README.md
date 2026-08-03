@@ -30,10 +30,33 @@ mark seen/owned.
 
 | Option | Default | Meaning |
 |--------|---------|---------|
-| SHOW LEVELS | on | Min–max level next to the owned ball |
+| SHOW LEVELS | on | Min–max level under the name |
 | SHOW RATES | on | `RATE##` under each species (habitat rate) |
 | HOTKEY | on | Enable keyboard shortcut |
 | HOTKEY KEY | R | Letter key (or OFF) |
+
+## For other mods
+
+Dex Radar exposes a small API via `mod.exports`. Resolve it with
+`mod.find("dex_radar")` (nil if the mod is disabled / missing).
+
+```lua
+local radar = mod.find("dex_radar")
+if not radar then return end
+local ex = radar.exports
+
+-- Sections for the current map (or pass an explicit mapId string):
+-- { id, title, rate?, entries = { { species, minLv, maxLv }, ... } }
+local sections = ex.collect(game)
+
+local ids = ex.speciesOnMap(game)          -- unique ids, grass→water→fish
+local n = ex.ownedCount(game)              -- { owned = n, total = m }
+local done = ex.isOwnedOnMap(game)         -- true if owned == total (empty → true)
+local seen = ex.isSeen(game, "PIDGEY")
+local owned = ex.isOwned(game, "PIDGEY")
+```
+
+Calling these helpers does **not** mark Pokédex seen/owned.
 
 ## Notes
 

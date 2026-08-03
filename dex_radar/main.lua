@@ -192,6 +192,66 @@ local function ownedCounts(game, sections)
   return owned, total
 end
 
+-- Resolve mapId: explicit arg, else current overworld map.
+local function resolveMapId(mod, mapId)
+  if type(mapId) == "string" and mapId ~= "" then return mapId end
+  if not (mod.world and mod.world.current) then return nil end
+  local cur = mod.world:current()
+  return cur and cur.mapId or nil
+end
+
+-- Unique species ids in section order (grass → water → fish), first-seen wins.
+local function speciesFromSections(sections)
+  local list, seen = {}, {}
+  for _, section in ipairs(sections or {}) do
+    for _, entry in ipairs(section.entries or {}) do
+      local id = entry.species
+      if type(id) == "string" and id ~= "" and not seen[id] then
+        seen[id] = true
+        list[#list + 1] = id
+      end
+    end
+  end
+  return list
+end
+
+local function publishExports(mod)
+  local function sectionsFor(game, mapId)
+    return collect(mod, resolveMapId(mod, mapId))
+  end
+
+  -- Sections: { id, title, rate?, entries = { { species, minLv, maxLv } } }
+  mod.exports.collect = function(game, mapId)
+    return sectionsFor(game, mapId)
+  end
+
+  mod.exports.isSeen = function(game, speciesId)
+    return isSeen(game, speciesId)
+  end
+
+  mod.exports.isOwned = function(game, speciesId)
+    return isOwned(game, speciesId)
+  end
+
+  -- Unique species on the map (grass → water → fish order).
+  mod.exports.speciesOnMap = function(game, mapId)
+    return speciesFromSections(sectionsFor(game, mapId))
+  end
+
+  -- { owned = n, total = m } for unique species on the map.
+  mod.exports.ownedCount = function(game, mapId)
+    local owned, total = ownedCounts(game, sectionsFor(game, mapId))
+    return { owned = owned, total = total }
+  end
+
+  -- true if every unique wild species on the map is owned.
+  -- Empty map (no wilds) → true.
+  mod.exports.isOwnedOnMap = function(game, mapId)
+    local owned, total = ownedCounts(game, sectionsFor(game, mapId))
+    return owned >= total
+  end
+end
+
 -- ------- art helpers
 
 local function drawPokeball(cx, cy, r)
@@ -611,12 +671,5 @@ return function(mod)
     openRadar(game)
   end)
 
-  -- Public surface for other mods (to be expanded in a later version).
-  mod.exports.collect = function(_game, mapId)
-    if not mapId and mod.world and mod.world.current then
-      local cur = mod.world:current()
-      mapId = cur and cur.mapId
-    end
-    return collect(mod, mapId)
-  end
+  publishExports(mod)
 end
