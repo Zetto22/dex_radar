@@ -5,6 +5,18 @@ All notable changes to **Dex Radar** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project versions with the `version` field in `manifest.json`.
 
+## [0.3.0] — 2026-08-03
+
+### Added
+
+- Public `mod.exports` for other mods:
+  - `collect(game, mapId?)` — habitat sections with entries / rates
+  - `speciesOnMap(game, mapId?)` — unique species ids (grass → water → fish)
+  - `ownedCount(game, mapId?)` — `{ owned, total }`
+  - `isOwnedOnMap(game, mapId?)` — all unique wilds owned (empty map → true)
+  - `isSeen` / `isOwned` — thin Pokédex wrappers
+- README **For other mods** with usage examples.
+
 ## [0.2.4] — 2026-08-03
 
 ### Changed
@@ -50,8 +62,8 @@ and this project versions with the `version` field in `manifest.json`.
 
 ### Planned (next)
 
-- Richer `mod.exports` (`isOwnedOnMap`, route species list helpers).
-- Safari-specific polish if gaps appear beyond normal encounter tables.
+See `plans/dex-radar/ROADMAP.md` (1.0.0 path). Historical note: richer exports
+shipped in **0.3.0**; Safari / Super Rod–only left to player reports after 1.0.0.
 
 ## [0.1.4] — 2026-08-03
 
