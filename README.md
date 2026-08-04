@@ -4,8 +4,8 @@ Lists wild Pokémon available on the **current map** (grass, water, fishing).
 
 Compact party-icon list (up to 3 species on screen, plus section headers).
 Unseen entries show as `?????` with silhouetted icons (no level/rate).
-Owned species get a Poké Ball mark. Opening the radar does **not**
-mark seen/owned.
+Owned species get a Poké Ball mark. Long map names in the header scroll
+instead of truncating. Opening the radar does **not** mark seen/owned.
 
 ## Install
 
@@ -62,6 +62,8 @@ Calling these helpers does **not** mark Pokédex seen/owned.
 ## Notes
 
 - Content mod (`affects_link: false`); disable to restore vanilla menus exactly.
+- Map labels wider than the header window scroll (hold at each end, 16px/s);
+  names that fit draw as a single static line.
 - GitHub releases for in-game Update must use tag **`vX.Y.Z`** (e.g. `v1.0.0`)
   with asset **`dex_radar-X.Y.Z.zip`**. Prefixed tags are ignored by the launcher.
 - License: [MIT](LICENSE) · Changes: [CHANGELOG.md](CHANGELOG.md)
