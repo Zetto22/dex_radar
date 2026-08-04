@@ -4,8 +4,9 @@ Lists wild Pokémon available on the **current map** (grass, water, fishing).
 
 Compact party-icon list (up to 3 species on screen, plus section headers).
 Unseen entries show as `?????` with silhouetted icons (no level/rate).
-Owned species get a Poké Ball mark. Long map names in the header scroll
-instead of truncating. Opening the radar does **not** mark seen/owned.
+Owned species get a Poké Ball mark. Party icons follow the game **COLORS**
+setting. Long map names in the header scroll instead of truncating. Opening
+the radar does **not** mark seen/owned.
 
 ## Install
 

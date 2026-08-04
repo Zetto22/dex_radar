@@ -5,6 +5,16 @@ All notable changes to **Dex Radar** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project versions with the `version` field in `manifest.json`.
 
+## [1.1.1] — 2026-08-03
+
+<!-- release-title: Color party icons with game COLORS -->
+
+### Fixed
+
+- Party icons follow the game **COLORS** setting (SGB / ADVANCED / etc.) via
+  the same MEWMON palette path as the party menu, instead of forced grayscale /
+  true-color bypass. Built-in icons also bake OBP0 and mirror like PartyMenu.
+
 ## [1.1.0] — 2026-08-03
 
 <!-- release-title: Scroll long map labels -->

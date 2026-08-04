@@ -311,38 +311,96 @@ local function drawPokeball(cx, cy, r)
   love.graphics.circle("line", cx, cy, 1.5)
 end
 
-local function markUnshaded(x, y, w, h)
-  local ok, P = pcall(require, "src.render.PaletteFX")
-  if ok and P and P.markTrueColor then
-    P.markTrueColor(x, y, w, h)
-  end
+-- Rest frame per built-in icon class (PartyMenu.iconFrames). Radar does not
+-- animate; we only need the resting pose the party menu shows.
+local ICON_FRAMES = {
+  BUG = 1, GRASS = 1, SNAKE = 0, QUADRUPED = 0,
+  MON = 3, FAIRY = 3, BIRD = 3, WATER = 0, PIKACHU = 3,
+}
+
+-- Built-in party icons are OBJ art: bake OBP0 "3100" so shade 2 never shows
+-- (same remap as PartyMenu / SpriteRenderer.getObpImage). Custom mod images
+-- skip the bake and load as authored.
+local function loadObpIcon(path)
+  local okA, Assets = pcall(require, "src.render.Assets")
+  if not (okA and Assets and Assets.imageData) then return nil end
+  local ok, img = pcall(function()
+    local id = Assets.imageData(path)
+    id:mapPixel(function(_, _, r, _, _, a)
+      local v = 0
+      if r > 0.5 then
+        v = 1
+      elseif r > 0.17 then
+        v = 170 / 255
+      end
+      return v, v, v, a
+    end)
+    local out = love.graphics.newImage(id)
+    out:setFilter("nearest", "nearest")
+    return out
+  end)
+  return ok and img or nil
 end
 
-local function resolveIconPath(game, speciesId)
+local function loadImage(path)
+  if not path then return nil end
+  local okA, Assets = pcall(require, "src.render.Assets")
+  local src = path
+  if okA and Assets and Assets.resolve then
+    local okR, resolved = pcall(Assets.resolve, path)
+    if okR and resolved then src = resolved end
+  end
+  local ok, img = pcall(love.graphics.newImage, src)
+  if not (ok and img) then return nil end
+  img:setFilter("nearest", "nearest")
+  return img
+end
+
+-- path, built-in icon class name (or nil for custom { image } art).
+local function resolveIcon(game, speciesId)
   local icons = game and game.data and game.data.icons
-  if not icons then return nil end
+  if not icons then return nil, nil end
   local def = game.data.pokemon and game.data.pokemon[speciesId]
   local entry = (icons.bySpecies and icons.bySpecies[speciesId])
     or (def and def.icon)
-  local path
+  local name, path
   if type(entry) == "string" then
+    name = entry
     path = icons.icons and icons.icons[entry]
   elseif type(entry) == "table" then
     path = entry.image
   end
   if not path and def and def.dex and icons.byDex then
-    local name = icons.byDex[def.dex]
+    name = icons.byDex[def.dex]
     path = name and icons.icons and icons.icons[name]
   end
-  return path
+  local okS, Sprites = pcall(require, "src.pokemon.Sprites")
+  if okS and Sprites and Sprites.iconPath then
+    local hooked = Sprites.iconPath(game.data, { species = speciesId }, path, {
+      name = name,
+    })
+    if type(hooked) == "string" and hooked ~= "" then path = hooked end
+  end
+  return path, name
 end
 
-local function loadImage(path)
-  if not path then return nil end
-  local ok, img = pcall(love.graphics.newImage, path)
-  if not (ok and img) then return nil end
-  img:setFilter("nearest", "nearest")
-  return img
+-- Draw a 16×16 party icon the way PartyMenu does (left half + XFLIP mirror
+-- for every built-in class except HELIX).
+local function drawPartyIcon(img, name, x, y)
+  local iw, ih = img:getDimensions()
+  local frame = 0
+  if name and ih > 16 then
+    frame = ICON_FRAMES[name] or 0
+  end
+  if name and name ~= "HELIX" then
+    local half = love.graphics.newQuad(0, frame * 16, 8, 16, iw, ih)
+    love.graphics.draw(img, half, x, y)
+    love.graphics.draw(img, half, x + 16, y, 0, -1, 1)
+  elseif ih > 16 then
+    love.graphics.draw(img, love.graphics.newQuad(0, frame * 16, 16, 16, iw, ih), x, y)
+  else
+    love.graphics.draw(img, x, y)
+  end
 end
 
 -- ------- rows / navigation
@@ -357,6 +415,7 @@ local function buildRows(mod, game, mapId)
       local seen = isSeen(game, entry.species)
       local owned = isOwned(game, entry.species)
       local name = (def and def.name) or entry.species
+      local iconPath, iconName = resolveIcon(game, entry.species)
       local row = {
         kind = "mon",
         id = entry.species,
@@ -366,7 +425,8 @@ local function buildRows(mod, game, mapId)
         minLv = entry.minLv,
         maxLv = entry.maxLv,
         rate = section.rate,
-        iconPath = resolveIconPath(game, entry.species),
+        iconPath = iconPath,
+        iconName = iconName,
       }
       rows[#rows + 1] = row
       monIndex[#monIndex + 1] = #rows
@@ -450,17 +510,20 @@ local function screenFactory(mod)
       local label = mapId and mapLabel(mod, mapId) or "UNKNOWN"
       local mapTicker = mapLabelTicker(Font, label)
 
-      local icons, quads = {}, {}
-      local function iconImg(path)
+      local icons = {}
+      -- Built-in class names bake OBP0 (cache key path#obp); custom art does not.
+      local function iconImg(path, name)
         if not path then return nil end
-        if icons[path] ~= nil then return icons[path] or nil end
-        local img = loadImage(path)
-        icons[path] = img or false
-        if img then
-          local iw, ih = img:getDimensions()
-          quads[path] = love.graphics.newQuad(0, 0, math.min(16, iw), math.min(16, ih), iw, ih)
+        local key = name and (path .. "#obp") or path
+        if icons[key] ~= nil then return icons[key] or nil end
+        local img
+        if name then
+          img = loadObpIcon(path) or loadImage(path)
+        else
+          img = loadImage(path)
         end
-        return icons[path] or nil
+        icons[key] = img or false
+        return icons[key] or nil
       end
 
       local Theme = mod.ui.Theme
@@ -485,14 +548,21 @@ local function screenFactory(mod)
       }
       ensureVisible(self)
 
-      function self:sgbPalettes(_game)
-        local grays = {
-          { 255, 255, 255 }, { 170, 170, 170 },
-          { 85, 85, 85 }, { 0, 0, 0 },
-        }
+      -- Party / ListMenu: MEWMON so COLORS (SGB / ADVANCED / …) recolor the
+      -- DMG shades. Forced grays + trueColor zones used to keep icons mono.
+      function self:sgbPalettes(game_)
+        local ok, P = pcall(require, "src.render.PaletteFX")
+        if ok and P and P.wholeNamed then
+          return P.wholeNamed(game_.data, "MEWMON")
+        end
         return {
-          { colors = grays, x = 0, y = 0, w = 160, h = 144 },
-          { colors = false, x = 0, y = LIST_TOP, w = 28, h = LIST_BOTTOM - LIST_TOP },
+          {
+            colors = {
+              { 255, 255, 255 }, { 170, 170, 170 },
+              { 85, 85, 85 }, { 0, 0, 0 },
+            },
+            x = 0, y = 0, w = 160, h = 144,
+          },
         }
       end
 
@@ -602,15 +672,14 @@ local function screenFactory(mod)
                 Font.drawCode(cursorCode, 8, y + 5)
               end
               local ix = 16
-              local img = iconImg(row.iconPath)
-              if img and quads[row.iconPath] then
+              local img = iconImg(row.iconPath, row.iconName)
+              if img then
                 if row.seen then
                   love.graphics.setColor(1, 1, 1, 1)
                 else
                   love.graphics.setColor(0, 0, 0, 1)
                 end
-                love.graphics.draw(img, quads[row.iconPath], ix, y + 2)
-                markUnshaded(ix, y + 2, ICON, ICON)
+                drawPartyIcon(img, row.iconName, ix, y + 2)
               else
                 love.graphics.setColor(0, 0, 0, 1)
                 love.graphics.rectangle("line", ix, y + 2, ICON, ICON)
