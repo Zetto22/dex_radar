@@ -1,0 +1,15 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Pack / runtime leftovers
+*.zip
+*.modpkg
+dist/
+save.lua
+options.lua
+
+# Editor
+.cursor/
+.luarc.json
