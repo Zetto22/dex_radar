@@ -10,5 +10,5 @@
   "priority": 100,
   "description": "Lists wild Pokemon on the current map; exports collect/owned helpers for other mods.",
   "game_version": ">=0.0.0-0 <2.0.0",
-  "github": "Zetto22/gen1recomp_mods"
+  "github": "Zetto22/dex_radar"
 }
