@@ -5,6 +5,15 @@ All notable changes to **Dex Radar** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project versions with the `version` field in `manifest.json`.
 
+## [1.1.2] — 2026-08-04
+
+<!-- release-title: Point updates at Zetto22/dex_radar -->
+
+### Changed
+
+- `manifest.github` now points at `Zetto22/dex_radar` (solo repo) so in-game
+  Check for updates / Versions hit the correct releases.
+
 ## [1.1.1] — 2026-08-03
 
 <!-- release-title: Color party icons with game COLORS -->
