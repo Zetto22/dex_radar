@@ -1,3 +1,9 @@
+# gen1recomp_mods
+
+Mods for [gen1recomp](https://github.com/bryanthaboi/gen1recomp) (LÖVE2D / Lua). Each mod lives in its own folder at the repo root.
+
+API docs: [gen1recomp wiki](https://github.com/bryanthaboi/gen1recomp/wiki)
+
 # Dex Radar
 
 Lists wild Pokémon available on the **current map** (grass, water, fishing).
