@@ -5,6 +5,34 @@ All notable changes to **Dex Radar** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project versions with the `version` field in `manifest.json`.
 
+## [1.2.0] — 2026-08-13
+
+<!-- release-title: Gen 2 Gold dual support -->
+
+### Added
+
+- Support to **Pokémon Gold** / **GEN 2**.
+- On Gen2: wild grass, water, and fishing on the current map.
+- On Gen2: **HEADBUTT**, **ROCK** (Rock Smash), **CONTEST** (National Park),
+  and **ROAMERS** (legendaries currently on this route after Burned Tower).
+- Party pokemon icons on Gen2.
+- Fishing split by rod (**OLD** / **GOOD** / **SUPER**) with a rate per species.
+- On Gen 1, the selected icon moves like party menu.
+
+### Changed
+
+- Menu and screen title shortened to **D.RADAR**.
+- Map name uses the familiar town-map title (e.g. `CHERRYGROVE CITY`).
+- **RATE** is how often that species appears (not the map’s “any encounter”
+  chance). 
+- On Gen2, shows the current time of day (`M` / `D` / `N`) and updates
+  if the clock changes while the radar is open.
+
+### Fixed
+
+- Scroll and the scrolling map name stay readable at high GAME SPEED.
+- No fishing list inside Poké Centers and other indoor maps.
+
 ## [1.1.2] — 2026-08-04
 
 <!-- release-title: Point updates at Zetto22/dex_radar -->
