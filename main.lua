@@ -335,30 +335,126 @@ local function isGen2IconName(name)
   return type(name) == "string" and name:sub(1, 5) == "ICON_"
 end
 
--- Built-in Gen 1 party icons are OBJ art: bake OBP0 "3100" so shade 2 never
--- shows (same remap as PartyMenu / SpriteRenderer.getObpImage). Gen 2 menu
--- icons and custom mod images load as authored.
-local function loadObpIcon(path)
-  local okA, Assets = pcall(require, "src.render.Assets")
-  if not (okA and Assets and Assets.imageData) then return nil end
-  local ok, img = pcall(function()
-    local id = Assets.imageData(path)
-    id:mapPixel(function(_, _, r, _, _, a)
-      local v = 0
-      if r > 0.5 then
-        v = 1
-      elseif r > 0.17 then
-        v = 170 / 255
-      end
-      return v, v, v, a
-    end)
-    local out = love.graphics.newImage(id)
-    out:setFilter("nearest", "nearest")
-    return out
-  end)
-  return ok and img or nil
+-- Authored RGB (Unique Menu Icons Unique Colors / GBC Red, and similar)
+-- must not go through OBP bake or the MEWMON / PartyMenu shader: those
+-- remap by the red channel and skew hues. Grayscale sheets stay
+-- palette-aware (vanilla classes, Unique Menu Icons Original, Gold ICON_*).
+local CHROMA_EPS = 12 / 255
+
+local function channelsUnit(r, g, b)
+  r, g, b = r or 0, g or 0, b or 0
+  if r > 1 or g > 1 or b > 1 then
+    return r / 255, g / 255, b / 255
+  end
+  return r, g, b
 end
 
+local function pixelHasChroma(r, g, b, a)
+  if (a or 1) < 0.02 then return false end
+  r, g, b = channelsUnit(r, g, b)
+  return math.abs(r - g) > CHROMA_EPS
+      or math.abs(g - b) > CHROMA_EPS
+      or math.abs(r - b) > CHROMA_EPS
+end
+
+local function imageDataHasChroma(id)
+  if not (id and id.getWidth and id.getPixel) then return false end
+  local w, h = id:getWidth(), id:getHeight()
+  for y = 0, h - 1 do
+    for x = 0, w - 1 do
+      if pixelHasChroma(id:getPixel(x, y)) then return true end
+    end
+  end
+  return false
+end
+
+local function markIconTrueColor(x, y)
+  pcall(function()
+    local PaletteFX = require("src.render.PaletteFX")
+    if PaletteFX and PaletteFX.markTrueColor then
+      PaletteFX.markTrueColor(x, y, ICON, ICON)
+    end
+  end)
+end
+
+-- Unique Menu Icons ships three folders; the path is the cheapest, most
+-- reliable signal when Assets.imageData cannot decode a mod-pack PNG.
+local function pathColorHint(path)
+  if type(path) ~= "string" then return nil end
+  local p = path:gsub("\\", "/"):lower()
+  if p:find("icon_gbc_red", 1, true) then return true end
+  if p:find("icon_color", 1, true) then return true end
+  if p:find("icon_original", 1, true) then return false end
+  return nil
+end
+
+local function uniqueMenuIconsLiteral(mod)
+  if not (mod and mod.find) then return nil end
+  local ok, other = pcall(mod.find, mod, "unique_menu_icons")
+  if not (ok and other) then return nil end
+  local opts = other.options
+  if not (type(opts) == "table" and type(opts.get) == "function") then
+    return nil
+  end
+  local okM, mode = pcall(opts.get, opts, "icon_color_mode")
+  if not okM then return nil end
+  if mode == "unique_colors" or mode == "gbc_red" then return true end
+  if mode == "original" then return false end
+  return nil
+end
+
+local function loadRawImageData(path)
+  if not path then return nil end
+  local okA, Assets = pcall(require, "src.render.Assets")
+  if okA and Assets and Assets.imageData then
+    local ok, data = pcall(Assets.imageData, path)
+    if ok and data and data.getPixel then return data end
+  end
+  local src = path
+  if okA and Assets and Assets.resolve then
+    local okR, resolved = pcall(Assets.resolve, path)
+    if okR and resolved then src = resolved end
+  end
+  if not (love and love.image and love.image.newImageData) then return nil end
+  local ok, data = pcall(love.image.newImageData, src)
+  if ok and data then return data end
+  if src ~= path then
+    ok, data = pcall(love.image.newImageData, path)
+    if ok and data then return data end
+  end
+  return nil
+end
+
+-- Sample the uploaded texture when file ImageData is unavailable (mod assets
+-- that love.graphics.newImage can load but love.image.newImageData cannot).
+local function imageHasChromaViaCanvas(img)
+  if not (img and love and love.graphics and love.graphics.newCanvas) then
+    return false
+  end
+  local ok, has = pcall(function()
+    local g = love.graphics
+    local iw, ih = img:getDimensions()
+    if not (iw and ih and iw > 0 and ih > 0) then return false end
+    local canvas = g.newCanvas(iw, ih)
+    canvas:setFilter("nearest", "nearest")
+    g.push("all")
+    g.origin()
+    g.setScissor()
+    g.setCanvas(canvas)
+    g.setShader()
+    g.setColor(1, 1, 1, 1)
+    g.clear(0, 0, 0, 0)
+    g.draw(img, 0, 0)
+    local data = canvas:newImageData()
+    g.pop()
+    return imageDataHasChroma(data)
+  end)
+  return ok and has and true or false
+end
+
+-- Built-in Gen 1 party icons are OBJ art: bake OBP0 "3100" so shade 2 never
+-- shows (same remap as PartyMenu / SpriteRenderer.getObpImage). Gen 2 menu
+-- icons, custom grayscale art, and chromatic sheets load as authored.
 local function loadImage(path)
   if not path then return nil end
   local okA, Assets = pcall(require, "src.render.Assets")
@@ -378,6 +474,55 @@ local function loadImage(path)
   if not (ok and img) then return nil end
   img:setFilter("nearest", "nearest")
   return img
+end
+
+-- img, trueColor. trueColor means the sheet has real hues and must skip
+-- palette remap (OBP bake, GbcPalette, and the screen MEWMON zone).
+-- colorHint: true/false from path or Unique Menu Icons mode; nil → inspect pixels.
+local function loadIconSheet(path, bakeObp, colorHint)
+  if not path then return nil, false end
+  local trueColor = colorHint
+  local id = loadRawImageData(path)
+  if trueColor == nil and id then
+    trueColor = imageDataHasChroma(id)
+  end
+  if id then
+    local src = id
+    if bakeObp and not trueColor then
+      local cloned
+      if id.clone then
+        local okC, copy = pcall(id.clone, id)
+        if okC and copy then cloned = copy end
+      end
+      src = cloned or id
+      src:mapPixel(function(_, _, r, _, _, a)
+        local v = 0
+        if r > 0.5 then
+          v = 1
+        elseif r > 0.17 then
+          v = 170 / 255
+        end
+        return v, v, v, a
+      end)
+    end
+    local ok, img = pcall(function()
+      local out = love.graphics.newImage(src)
+      out:setFilter("nearest", "nearest")
+      return out
+    end)
+    if ok and img then
+      if trueColor == nil then
+        trueColor = imageHasChromaViaCanvas(img)
+      end
+      return img, trueColor and true or false
+    end
+  end
+  local img = loadImage(path)
+  if not img then return nil, false end
+  if trueColor == nil then
+    trueColor = imageHasChromaViaCanvas(img)
+  end
+  return img, trueColor and true or false
 end
 
 -- Gold ships menu icons under data.gen2Icons; Gen 1 under data.icons.
@@ -462,8 +607,9 @@ local function gen1IconFrame(name, ih, selected, clock)
 end
 
 -- Draw a 16×16 party icon.
--- Gen 2: animated sheet + live PartyMenu OBP (GbcPalette respects COLOR).
--- Gen 1: OBP-baked art; COLORS come from screen sgbPalettes (MEWMON).
+-- Gen 2 grayscale: animated sheet + live PartyMenu OBP (GbcPalette / COLOR).
+-- Gen 1 grayscale: OBP-baked art; COLORS come from screen sgbPalettes (MEWMON).
+-- Chromatic authored sheets skip both remaps (opts.trueColor).
 local function drawPartyIcon(img, name, x, y, opts)
   opts = opts or {}
   local iw, ih = img:getDimensions()
@@ -481,13 +627,18 @@ local function drawPartyIcon(img, name, x, y, opts)
       end
       love.graphics.draw(img, quad, x, y)
     end
-    if colors and not silhouette then
+    if colors and not silhouette and not opts.trueColor then
       local ok, GbcPalette = pcall(require, "src.render.GbcPalette")
       if ok and GbcPalette and GbcPalette.available and GbcPalette.available()
           and GbcPalette.with then
         GbcPalette.with(colors, paint)
         return
       end
+    end
+    -- Unique Colors on Gold: drop any leftover palette shader so RGB
+    -- pixels are not remapped by red-channel shade (Pidgey → green).
+    if opts.trueColor and love and love.graphics and love.graphics.setShader then
+      love.graphics.setShader()
     end
     paint()
     return
@@ -500,7 +651,9 @@ local function drawPartyIcon(img, name, x, y, opts)
     end
   end
   local drawY = y + (opts.yNudge or 0)
-  if name and name ~= "HELIX" then
+  -- Built-in class icons are a mirrored left half (PartyMenu.mirrorsIcon).
+  -- Authored / true-color sheets are full 16×16 frames.
+  if name and name ~= "HELIX" and not opts.trueColor then
     local half = love.graphics.newQuad(0, frame * 16, 8, 16, iw, ih)
     love.graphics.draw(img, half, x, drawY)
     love.graphics.draw(img, half, x + 16, drawY, 0, -1, 1)
@@ -624,23 +777,27 @@ local function screenFactory(mod)
       local mapTicker = mapLabelTicker(Font, label)
 
       local icons = {}
-      -- Gen 1 built-in classes bake OBP0 (cache key path#obp); Gen 2 ICON_*
-      -- sheets and custom art load as authored.
+      -- Gen 1 built-in classes bake OBP0 (cache key path#obp) unless the
+      -- sheet is chromatic. Gen 2 ICON_* and custom grayscale load as
+      -- authored and still follow COLOR; chromatic sheets skip remap.
       local function iconImg(path, name)
-        if not path then return nil end
-        local key = name and (path .. "#obp") or path
-        if isGen2IconName(name) then
-          key = path
+        if not path then return nil, false end
+        local bakeObp = name and not isGen2IconName(name)
+        local key = bakeObp and (path .. "#obp") or path
+        local cached = icons[key]
+        if cached ~= nil then
+          if not cached then return nil, false end
+          return cached.img, cached.trueColor
         end
-        if icons[key] ~= nil then return icons[key] or nil end
-        local img
-        if name and not isGen2IconName(name) then
-          img = loadObpIcon(path) or loadImage(path)
-        else
-          img = loadImage(path)
+        local hint = pathColorHint(path)
+        if hint == nil then hint = uniqueMenuIconsLiteral(mod) end
+        local img, trueColor = loadIconSheet(path, bakeObp, hint)
+        if img then
+          icons[key] = { img = img, trueColor = trueColor and true or false }
+          return img, trueColor
         end
-        icons[key] = img or false
-        return icons[key] or nil
+        icons[key] = false
+        return nil, false
       end
 
       local Theme = mod.ui.Theme
@@ -835,17 +992,19 @@ local function screenFactory(mod)
                   Font.drawCode(cursorCode, 8, y + 5)
                 end
                 local ix = 16
-                local img = iconImg(row.iconPath, row.iconName)
+                local img, trueColor = iconImg(row.iconPath, row.iconName)
                 if img then
+                  local iconY = y + 2
                   if isGen2IconName(row.iconName) then
                     local frame = math.floor(
                       (self.iconClock or 0) / GEN2_ICON_FRAME_STEPS
                     ) % 2
-                    drawPartyIcon(img, row.iconName, ix, y + 2, {
+                    drawPartyIcon(img, row.iconName, ix, iconY, {
                       frame = frame,
-                      -- Live cart OBP; GbcPalette applies COLOR (GBC/DMG/CLASSIC).
+                      -- Live cart OBP; skipped for chromatic authored art.
                       colors = partyMenuObp(self.game),
                       silhouette = not row.seen,
+                      trueColor = trueColor,
                     })
                   else
                     local _, ih = img:getDimensions()
@@ -858,6 +1017,7 @@ local function screenFactory(mod)
                       yNudge = 1
                       frame = (ih > 16) and (ICON_FRAMES[row.iconName] or 0) or 0
                     end
+                    iconY = y + 2 + yNudge
                     if row.seen then
                       love.graphics.setColor(1, 1, 1, 1)
                     else
@@ -866,7 +1026,11 @@ local function screenFactory(mod)
                     drawPartyIcon(img, row.iconName, ix, y + 2, {
                       frame = frame,
                       yNudge = yNudge,
+                      trueColor = trueColor,
                     })
+                  end
+                  if trueColor then
+                    markIconTrueColor(ix, iconY)
                   end
                 else
                   love.graphics.setColor(0, 0, 0, 1)

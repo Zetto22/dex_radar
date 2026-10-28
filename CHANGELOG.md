@@ -5,6 +5,28 @@ All notable changes to **Dex Radar** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project versions with the `version` field in `manifest.json`.
 
+## [1.3.1] — 2026-08-21
+
+<!-- release-title: Fix unique icon colors on Gold -->
+
+### Fixed
+
+- Unique Menu Icons **Unique Colors** / **GBC Red** on Gold and Silver no
+  longer pick up the party-menu palette in D.RADAR (Pidgey turning green,
+  etc.). The radar now trusts the icon folder / color mode, not only a
+  pixel read that can fail on mod-pack paths.
+
+## [1.3.0] — 2026-08-21
+
+<!-- release-title: Keep true-color party icons -->
+
+### Fixed
+
+- Party icons with real color (Unique Menu Icons Unique Colors / GBC Red,
+  and similar mods) keep their authored hues instead of the menu palette
+  remapping them. Grayscale icons, including Unique Menu Icons Original,
+  still follow the game **COLORS** setting.
+
 ## [1.2.0] — 2026-08-13
 
 <!-- release-title: Gen 2 Gold dual support -->

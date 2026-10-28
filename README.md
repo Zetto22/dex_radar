@@ -13,10 +13,11 @@ any **roaming** legendary currently on the route.
 
 Compact party-icon list (up to 3 species on screen, plus section headers).
 Unseen entries show as `?????` with silhouetted icons (no level/rate).
-Owned species get a Poké Ball mark. Party icons follow the game **COLORS**
-setting. Long map names in the header scroll instead of truncating; Gold uses
-the landmark / town-map title when available. Opening the radar does **not**
-mark seen/owned.
+Owned species get a Poké Ball mark. Grayscale party icons follow the game
+**COLORS** setting. Authored true-color icons (Unique Menu Icons in Unique
+Colors / GBC Red, and similar packs) keep their literal hues. Long map names
+in the header scroll instead of truncating; Gold uses the landmark / town-map
+title when available. Opening the radar does **not** mark seen/owned.
 
 On Gold, grass slots from morning / day / night are **merged** into one GRASS
 section. Each species shows its encounter **share for the current time of day**
@@ -92,6 +93,9 @@ Calling these helpers does **not** mark Pokédex seen/owned.
 - Content mod (`affects_link: false`); disable to restore vanilla menus exactly.
 - Map labels wider than the header window scroll (hold at each end, 16px/s);
   names that fit draw as a single static line.
+- Grayscale menu icons (vanilla and Unique Menu Icons **Original**) follow
+  **COLORS**. Chromatic icon sheets skip the menu palette so Unique Colors /
+  GBC Red stay as authored.
 - Gen 2 fishing uses the map's fish group (not Gen 1 `field`), split per rod;
   species `0` sentinel rows (roll water instead) are omitted from the lists.
 - Headbutt / Rock Smash rates blend common trees (~90%) with rare trees (~10%).
